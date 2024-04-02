@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Configure API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def read_pdf(file_path):
@@ -40,15 +41,16 @@ def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=1000)
     return text_splitter.split_text(text)
 
-def get_vector_store(text_chunks):
+def get_vector_store(text_chunks, file_path):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
-    vector_store.save_local("faiss_index")
+    index_file = f"faiss_index_{os.path.basename(file_path)}"
+    vector_store.save_local(index_file)
 
 def get_conversational_chain():
     prompt_template = """
     Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the 
-    answer is not in provided context just say, 'answer is not in the provided context', don't provide the wrong answer.
+    answer is not in the provided context just say, 'answer is not in the provided context', don't provide the wrong answer.
 
     Context:\n{context}?\n
     Question: \n{question}\n
@@ -58,17 +60,12 @@ def get_conversational_chain():
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
-def user_input(user_question):
+def user_input(user_question, file_path):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
-    docs = new_db.similarity_search(user_question)
+    index_file = f"faiss_index_{os.path.basename(file_path)}"
+    new_db = FAISS.load_local(index_file, embeddings, allow_dangerous_deserialization=True)
 
+    docs = new_db.similarity_search(user_question)
     chain = get_conversational_chain()
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
-    print(response)
-
-
-pdf_text = read_pdf("cv.pdf")
-text_chunks = get_text_chunks(pdf_text)
-get_vector_store(text_chunks)
-user_input("What did Shahrom do at IWPR?")
+    return response
