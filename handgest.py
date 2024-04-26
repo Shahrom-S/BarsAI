@@ -2,15 +2,17 @@ import cv2
 import time
 import handmodule as hm
 import pyautogui
-
+import math
 
 class SwipeDetector:
-    def __init__(self, frame_count=10, swipe_threshold=150):
+    def __init__(self, frame_count=10, swipe_threshold=150, fist_threshold=15):
         self.positions = []
         self.frame_count = frame_count
         self.swipe_threshold = swipe_threshold
+        self.fist_threshold = fist_threshold
         self.last_swipe_time = time.time()
         self.debounce_time = 0.5
+        self.fist_closed = False
 
     def update_positions(self, lmList):
         if len(lmList) == 0:
@@ -44,6 +46,23 @@ class SwipeDetector:
 
         return None
 
+    def detect_fist(self, lmList):
+        if len(lmList) == 0:
+            return False
+
+        # Calculate distances between fingertips and palm center (landmark 0)
+        distances = [
+            math.hypot(lmList[i][1] - lmList[0][1], lmList[i][2] - lmList[0][2])
+            for i in [4, 8, 12, 16, 20]
+        ]
+
+        # If all distances are below the threshold, consider it a fist
+        if all(d < self.fist_threshold for d in distances):
+            self.fist_closed = True
+            return True
+        else:
+            self.fist_closed = False
+            return False
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -59,13 +78,17 @@ def main():
         lmList = detector.findPosition(img, draw=True)
 
         if swipe_detector.update_positions(lmList):
-            swipe_type = swipe_detector.detect_swipe()
-            if swipe_type == 'forward':
-                pyautogui.press('left')
-                print("Swipe forward detected")
-            elif swipe_type == 'backward':
-                pyautogui.press('right')
-                print("Swipe backward detected")
+            if not swipe_detector.fist_closed:
+                swipe_type = swipe_detector.detect_swipe()
+                if swipe_type == 'forward':
+                    pyautogui.press('left')
+                    print("Swipe forward detected")
+                elif swipe_type == 'backward':
+                    pyautogui.press('right')
+                    print("Swipe backward detected")
+
+        if swipe_detector.detect_fist(lmList):
+            print("Fist detected!")
 
         cv2.imshow("Image", img)
         if cv2.waitKey(1) & 0xFF == ord('q'):

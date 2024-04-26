@@ -5,7 +5,6 @@ from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHan
 from langchain_core.prompts import PromptTemplate
 from collections import deque
 
-
 model_path = os.path.join(os.path.dirname(__file__), "models--TheBloke--Llama-2-7B-Chat-GGUF", "blobs",
                           "e0b99920cf47b94c78d2fb06a1eceb9ed795176dfa3f7feac64629f1b52b997f")
 
