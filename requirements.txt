@@ -1,0 +1,13 @@
+langchain
+llama-cpp-python
+google-generativeai
+langchain_google_genai
+faiss-cpu
+pandas
+PyPDF2
+python-docx
+python-dotenv
+opencv-python
+mediapipe
+nltk
+pycaw
