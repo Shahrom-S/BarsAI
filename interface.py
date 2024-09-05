@@ -174,7 +174,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("AI Assistant")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 1000, 650)
 
         self.llm_model = load_model()
 
